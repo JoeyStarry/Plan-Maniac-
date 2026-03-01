@@ -6,31 +6,29 @@ services:
     container_name: plan-maniac-db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
       POSTGRES_DB: plan-maniac
-    ports:
-      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     restart: always
+    networks:
+      - app-network
 
   redis:
     image: redis:7
     container_name: plan-maniac-redis
-    ports:
-      - '6379:6379'
     volumes:
       - redis-data:/data
     restart: always
+    networks:
+      - app-network
 
   api:
-    build:
-      context: ./plan-maniac-api
-      dockerfile: Dockerfile
+    image: ${IMAGE_API:-ghcr.io/joeystarry/plan-maniac-api:latest}
     container_name: plan-maniac-api
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-password}@db:5432/plan-maniac?schema=public
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-plan-maniac-v1}
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-changeme}@db:5432/plan-maniac?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 3000
@@ -40,19 +38,25 @@ services:
       - db
       - redis
     restart: always
+    networks:
+      - app-network
     command: sh -c "npx prisma db push && node dist/main.js"
 
   web:
-    build:
-      context: ./plan-maniac-web
-      dockerfile: Dockerfile
+    image: ${IMAGE_WEB:-ghcr.io/joeystarry/plan-maniac-web:latest}
     container_name: plan-maniac-web
     ports:
       - '80:80'
     depends_on:
       - api
     restart: always
+    networks:
+      - app-network
 
 volumes:
   postgres-data:
   redis-data:
+
+networks:
+  app-network:
+    driver: bridge
