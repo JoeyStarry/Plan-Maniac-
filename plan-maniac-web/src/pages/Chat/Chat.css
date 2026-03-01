@@ -1,0 +1,357 @@
+/* 整体分栏布局容器 */
+.chat-layout-container {
+  display: flex;
+  height: calc(100vh - 64px - 48px);
+  background: #f5f5f5;
+  gap: 16px;
+  /* 使得容器在 AppLayout 内填满并给一点周围间距 */
+  padding: 0 16px 16px 16px;
+  box-sizing: border-box;
+}
+
+/* Chat Page - 聊天区域 (左侧) */
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  flex: 2; /* 占用 2/3 的宽度 */
+  background: #f5f5f5;
+  border-right: 1px solid #e8e8e8;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* 顶部栏 */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.chat-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #333;
+  padding: 4px 8px;
+}
+
+.chat-back-btn:hover {
+  color: #764ba2;
+}
+
+.chat-header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+  flex: 1;
+}
+
+.chat-header-placeholder {
+  width: 64px;
+}
+
+/* 消息区域 */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f5f5f5;
+}
+
+/* 消息行 */
+.message-row {
+  display: flex;
+  margin-bottom: 16px;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.message-row.pico {
+  flex-direction: row;
+}
+
+.message-row.user {
+  flex-direction: row-reverse;
+}
+
+/* Pico 头像 */
+.pico-avatar {
+  margin-top: 2px;
+}
+
+/* 消息内容容器 */
+.message-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
+/* 消息气泡 */
+.message-bubble {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.pico-bubble {
+  background: #ffffff;
+  color: #333;
+  border-radius: 2px 12px 12px 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.user-bubble {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #ffffff;
+  border-radius: 12px 2px 12px 12px;
+  box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+}
+
+/* 消息时间 */
+.message-time {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.message-time-right {
+  text-align: right;
+}
+
+/* 底部输入区 */
+.chat-input-area {
+  display: flex;
+  align-items: flex-end;
+  padding: 10px 12px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-textarea {
+  flex: 1;
+  border-radius: 8px !important;
+  resize: none !important;
+  font-size: 14px !important;
+}
+
+.chat-textarea:focus {
+  border-color: #764ba2 !important;
+  box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.15) !important;
+}
+
+.chat-action-btn {
+  font-size: 18px;
+  color: #666;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chat-action-btn:hover {
+  color: #764ba2 !important;
+}
+
+.chat-send-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+  opacity: 0.85;
+}
+
+.chat-send-btn:disabled {
+  background: #d9d9d9 !important;
+  opacity: 0.6;
+}
+
+/* 滚动条美化 */
+.chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* ========== 右侧 AI 思考区域 ========== */
+.chat-thinking-area {
+  flex: 1; /* 占用 1/3 的宽度 */
+  background: #ffffff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.thinking-header {
+  padding: 12px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thinking-icon {
+  font-size: 16px;
+}
+
+.thinking-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  font-family: monospace; /* 用等宽字体显示思考过程更有极客感 */
+  background: #fdfdfd;
+}
+
+.thinking-placeholder {
+  color: #bbb;
+  text-align: center;
+  margin-top: 40px;
+  font-style: italic;
+  font-family: sans-serif;
+}
+
+.thinking-cursor {
+  animation: blink 1s step-end infinite;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.chat-uploaded-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.chat-action-btn.recording {
+  color: #ff4d4f !important;
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* 移动端自适应 */
+@media screen and (max-width: 800px) {
+  .chat-layout-container {
+    flex-direction: column;
+    padding: 0;
+    height: auto;
+    min-height: calc(100vh - 50px - 48px);
+  }
+
+  .chat-page {
+    flex: none;
+    height: 60vh;
+    border-radius: 0;
+    border-right: none;
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .chat-thinking-area {
+    flex: none;
+    height: 40vh;
+    border-radius: 0;
+  }
+
+  .chat-header {
+    padding: 10px 12px;
+  }
+
+  .chat-header-title {
+    font-size: 15px;
+  }
+
+  .chat-messages {
+    padding: 12px;
+  }
+
+  .message-row {
+    margin-bottom: 12px;
+  }
+
+  .message-content {
+    max-width: 80%;
+  }
+
+  .message-bubble {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .chat-input-area {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .chat-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .chat-send-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* 平板自适应 */
+@media screen and (max-width: 768px) and (min-width: 601px) {
+  .message-content {
+    max-width: 75%;
+  }
+
+  .chat-header-title {
+    font-size: 16px;
+  }
+}

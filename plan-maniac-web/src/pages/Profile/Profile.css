@@ -1,0 +1,242 @@
+/* ========== 外层容器 ========== */
+.profile-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+/* ========== 顶部用户卡片 ========== */
+.profile-hero-card {
+  background: linear-gradient(180deg, #f0f2ff 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 40px 24px 32px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+
+/* 头像区域 */
+.profile-avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  background: linear-gradient(135deg, #667eea, #764ba2) !important;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.change-avatar-btn {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #667eea;
+}
+
+.change-avatar-btn:hover {
+  color: #764ba2;
+}
+
+/* 昵称 */
+.profile-nickname {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+}
+
+/* ID 区域 */
+.profile-id-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.profile-id-badge {
+  display: inline-block;
+  background: #f5f5f5;
+  border: 1px solid #e8e8e8;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+  color: #8c8c8c;
+  letter-spacing: 0.3px;
+  user-select: all;
+}
+
+.copy-id-btn {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.copy-id-btn:hover {
+  color: #667eea;
+}
+
+/* 个性签名 */
+.profile-signature {
+  font-size: 14px;
+  font-style: italic;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+/* ========== 中间 Card 通用 ========== */
+.profile-card {
+  border-radius: 12px !important;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.profile-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-card .ant-card-head-title {
+  font-weight: 600;
+}
+
+/* ========== 积分中心 ========== */
+.profile-points-card {
+  background: linear-gradient(135deg, #fffbe6 0%, #fff7e6 50%, #ffffff 100%);
+}
+
+.points-display-area {
+  text-align: center;
+  padding: 16px 0 24px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+.points-number {
+  font-size: 48px;
+  font-weight: 700;
+  color: #faad14;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(250, 173, 20, 0.2);
+}
+
+.points-label {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 4px 0 0;
+}
+
+.points-hint {
+  font-size: 13px;
+  color: #bfbfbf;
+  margin: 8px 0 20px;
+}
+
+.shop-btn {
+  border-radius: 20px;
+  padding: 0 28px;
+  height: 38px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+}
+
+.shop-btn:hover {
+  background: linear-gradient(135deg, #5a6fd6, #6a4196) !important;
+}
+
+/* 积分历史 */
+.points-history {
+  padding-top: 4px;
+}
+
+.points-history-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+}
+
+.points-history-value {
+  font-weight: 600;
+  color: #faad14;
+  font-size: 15px;
+}
+
+/* ========== 底部返回按钮 ========== */
+.profile-footer {
+  margin-top: 12px;
+  padding: 0 4px;
+}
+
+.profile-footer .ant-btn {
+  border-radius: 12px;
+  height: 48px;
+  font-size: 16px;
+}
+
+/* ========== 积分商城 Modal ========== */
+.shop-modal-content {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.shop-modal-emoji {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.shop-modal-text {
+  font-size: 16px;
+  color: #595959;
+  margin: 0;
+}
+
+/* ========== 响应式适配 ========== */
+@media (max-width: 600px) {
+  .profile-container {
+    padding: 12px 8px 32px;
+  }
+
+  .profile-hero-card {
+    padding: 28px 16px 24px;
+    border-radius: 12px;
+  }
+
+  .profile-nickname {
+    font-size: 22px;
+  }
+
+  .profile-id-badge {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+
+  .points-number {
+    font-size: 40px;
+  }
+
+  .profile-card {
+    border-radius: 10px !important;
+  }
+
+  .profile-footer .ant-btn {
+    height: 44px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .profile-hero-card {
+    padding: 20px 12px 20px;
+  }
+
+  .profile-nickname {
+    font-size: 20px;
+  }
+
+  .points-number {
+    font-size: 36px;
+  }
+}

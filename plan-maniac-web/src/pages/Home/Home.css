@@ -1,0 +1,403 @@
+/* ========== 外层容器 ========== */
+.home-container {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+  min-height: 100vh;
+  /* 降低白色遮罩的不透明度，让背景图片更清晰（更显色） */
+  background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)), url('../../assets/calendar-bg.jpg') center / cover no-repeat fixed;
+}
+
+.calendar-card {
+  width: 100%;
+  max-width: 900px;
+  /* 稍微降低卡片的白色底，让背景透过来更多 */
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15), 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  box-sizing: border-box;
+  align-self: flex-start;
+  overflow: hidden;
+}
+
+/* ========== 顶部导航 ========== */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px 0 16px;
+}
+
+.calendar-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  min-width: 150px;
+  text-align: center;
+  user-select: none;
+  letter-spacing: 2px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  color: #333;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1a1a1a;
+}
+
+/* ========== 星期栏（金色底） ========== */
+.weekday-bar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: rgba(191, 137, 34, 0.9); /* 稍微加深金色，透明度提高一点增加对比，原本是 rgba(212, 160, 56, 0.85) */
+  border-radius: 8px;
+  margin-bottom: 0;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.weekday-cell {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700; /* 加粗 */
+  color: #fff;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3); /* 增加文字阴影提高可读性 */
+}
+
+.weekday-cell.weekend {
+  color: #FFECA1; /* 周末颜色加深一点发光感 */
+}
+
+/* ========== 翻页动画容器 ========== */
+.flip-perspective {
+  perspective: 1200px;
+  overflow: hidden;
+}
+
+.calendar-body {
+  position: relative;
+  transform-origin: center center;
+}
+
+/* ========== 月份水印 ========== */
+.month-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 280px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.4);
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  z-index: 0;
+}
+
+/* ========== 日期网格 ========== */
+.calendar-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  z-index: 1;
+}
+
+/* ========== 日期单元格 ========== */
+.day-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 88px;
+  padding: 10px 2px 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  background-color: transparent;
+}
+
+.day-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.day-cell:nth-last-child(-n+7) {
+  border-bottom: none;
+}
+
+.day-cell:hover {
+  background-color: rgba(255, 253, 240, 0.6);
+  transform: translateY(-2px);
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+}
+
+/* 非本月 */
+.day-cell.other-month {
+  opacity: 0.4;
+}
+
+.day-cell.other-month:hover {
+  background-color: rgba(250, 250, 250, 0.4);
+}
+
+/* 周末文字红色（仅本月） */
+.day-cell.weekend .day-number {
+  color: #b31414; /* 加深周末红字，原本是 #CC3333 */
+}
+
+/* 今日高亮 */
+.day-cell.today {
+  background-color: rgba(255, 243, 196, 0.7);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(212, 160, 56, 0.5);
+}
+
+.day-cell.today:hover {
+  background-color: rgba(255, 236, 173, 0.85);
+}
+
+/* ========== 日期数字 ========== */
+.day-number {
+  font-size: 20px;
+  font-weight: 800; /* 加粗 */
+  color: #000000;   /* 加深纯黑 */
+  line-height: 1.2;
+}
+
+/* ========== 副文字 ========== */
+.day-sub {
+  font-size: 11px;
+  line-height: 1.3;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+
+.sub-lunar {
+  color: #4a4a4a; /* 加深，原本是 #999 */
+}
+
+.sub-month {
+  color: #222;    /* 加深，原本是 #666 */
+  font-weight: 700;
+}
+
+.sub-solar-term {
+  color: #086b54; /* 加深绿色，原本是 #0E8A6E */
+  font-weight: 700;
+}
+
+.sub-festival {
+  color: #a31f1f; /* 加深红色，原本是 #CC3333 */
+  font-weight: 700;
+}
+
+/* ========== 今/昨/明 徽章 ========== */
+.day-badge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: #fff;
+  z-index: 2;
+}
+
+.badge-today {
+  background: #E6A817;
+}
+
+.badge-yesterday {
+  background: #b0b0b0;
+}
+
+.badge-tomorrow {
+  background: #7CB3F0;
+}
+
+/* ========== 休/班 丝带 ========== */
+.ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.ribbon::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 3px;
+  right: -8px;
+  width: 36px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  transform: rotate(45deg);
+  line-height: 14px;
+}
+
+.ribbon-rest {
+  background: linear-gradient(135deg, transparent 50%, #CC3333 50%);
+}
+
+.ribbon-rest::before {
+  color: #fff;
+}
+
+.ribbon-work {
+  background: linear-gradient(135deg, transparent 50%, #D4A038 50%);
+}
+
+.ribbon-work::before {
+  color: #fff;
+}
+
+/* ========== 计划圆点 ========== */
+.plan-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #667eea;
+  margin-top: 3px;
+}
+
+.day-cell.other-month .plan-dot {
+  background-color: #bfbfbf;
+}
+
+/* ========== 弹窗内计划列表 ========== */
+.plan-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.plan-color-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.plan-content {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  word-break: break-word;
+}
+
+.pico-tag {
+  flex-shrink: 0;
+  margin-inline-end: 0 !important;
+}
+
+/* ========== 响应式适配 ========== */
+@media (max-width: 600px) {
+  .home-container {
+    padding: 8px 4px;
+  }
+
+  .calendar-card {
+    padding: 12px 6px;
+    border-radius: 12px;
+  }
+
+  .calendar-title {
+    font-size: 17px;
+    min-width: 120px;
+  }
+
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .weekday-cell {
+    font-size: 12px;
+    padding: 8px 0;
+    letter-spacing: 0;
+  }
+
+  .month-watermark {
+    font-size: 160px;
+  }
+
+  .day-cell {
+    min-height: 64px;
+    padding: 6px 1px 4px;
+  }
+
+  .day-number {
+    font-size: 15px;
+  }
+
+  .day-sub {
+    font-size: 9px;
+  }
+
+  .day-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+
+  .ribbon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .ribbon::before {
+    font-size: 7px;
+    line-height: 12px;
+    top: 2px;
+    right: -9px;
+  }
+
+  .plan-dot {
+    width: 4px;
+    height: 4px;
+  }
+}

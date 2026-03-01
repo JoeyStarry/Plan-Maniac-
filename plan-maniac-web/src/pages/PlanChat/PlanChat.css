@@ -1,0 +1,210 @@
+/* Plan Chat Page */
+.plan-chat-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f5f5f5;
+}
+
+.plan-chat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  padding: 40px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Header */
+.plan-chat-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.plan-chat-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+}
+
+.plan-chat-subtitle {
+  font-size: 14px;
+  color: #999999;
+  margin: 0;
+}
+
+/* Button Container - Word Cloud Layout */
+.plan-btn-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 0 20px 0; /* 加大上方内边距，给漂浮动画留出空间 */
+  min-height: 350px;      /* 给容器足够高度展示动画 */
+  align-items: center;
+}
+
+/* Base Button Style */
+.plan-btn {
+  border-radius: 24px;
+  cursor: pointer;
+  border: 2px solid;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease, background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  outline: none;
+  font-family: inherit;
+  /* 气泡漂浮及呼吸动画 */
+  animation-name: floatBubble;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  animation-direction: alternate;
+}
+
+/* 暂停漂浮动画，如果容器或者同级其它元素悬停（可选，这里设置为只在自己悬停时暂停） */
+.plan-btn:hover {
+  animation-play-state: paused;
+  z-index: 10;
+  position: relative;
+}
+
+@keyframes floatBubble {
+  0% {
+    transform: translateY(12px) scale(0.85);
+  }
+  50% {
+    transform: translateY(0px) scale(1.05);
+  }
+  100% {
+    transform: translateY(-12px) scale(0.9);
+  }
+}
+
+.plan-btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* Size Variants */
+.plan-btn.large {
+  padding: 20px 36px;
+  font-size: 18px;
+}
+
+.plan-btn.medium {
+  padding: 14px 28px;
+  font-size: 15px;
+}
+
+.plan-btn.small {
+  padding: 10px 20px;
+  font-size: 13px;
+}
+
+/* Word Cloud Offset - Staggered Layout */
+.plan-btn.offset-even {
+  margin-top: 8px;
+}
+
+.plan-btn.offset-odd {
+  margin-top: -4px;
+}
+
+/* Icon */
+.plan-btn-icon {
+  font-size: 1.1em;
+}
+
+/* Hover Effects */
+.plan-btn:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 0 25px var(--hover-glow-color, rgba(102, 126, 234, 0.5));
+  border-color: var(--hover-glow-color) !important;
+  background-color: #fff !important; /* 背景变亮更显光晕 */
+  z-index: 20;
+}
+
+/* 修改其他未选中的透明度（可选的聚光灯效果，如果需要的话可以解开下面注释） */
+/*
+.plan-btn-container:hover .plan-btn:not(:hover) {
+  opacity: 0.5;
+  filter: blur(2px);
+}
+*/
+
+.plan-btn.offset-even,
+.plan-btn.offset-odd {
+  /* 去掉原本静态的位移，现在全靠动画生成漂浮随机感 */
+  margin-top: 0;
+}
+
+/* Responsive - Mobile */
+@media screen and (max-width: 600px) {
+  .plan-chat-page {
+    padding: 12px;
+  }
+
+  .plan-chat-card {
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
+
+  .plan-chat-title {
+    font-size: 22px;
+  }
+
+  .plan-chat-subtitle {
+    font-size: 13px;
+  }
+
+  .plan-btn-container {
+    gap: 10px;
+  }
+
+  .plan-btn.large {
+    padding: 14px 24px;
+    font-size: 15px;
+  }
+
+  .plan-btn.medium {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .plan-btn.small {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .plan-btn.offset-even {
+    margin-top: 4px;
+  }
+
+  .plan-btn.offset-odd {
+    margin-top: -2px;
+  }
+}
+
+/* Responsive - Tablet */
+@media screen and (max-width: 768px) and (min-width: 601px) {
+  .plan-chat-card {
+    padding: 32px 24px;
+  }
+
+  .plan-btn.large {
+    padding: 16px 30px;
+    font-size: 16px;
+  }
+
+  .plan-btn.medium {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+}

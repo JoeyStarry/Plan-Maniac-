@@ -1,0 +1,235 @@
+/* ===== Page Layout ===== */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+/* ===== Card ===== */
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px 40px 36px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.1);
+  animation: cardFadeIn 0.5s ease-out;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Logo ===== */
+.login-logo {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.logo-icon {
+  display: none; /* 我们把原来的 emoji 隐藏，虽然我们在 TSX 中已经移除了，这里为了清理残留样式备用 */
+}
+
+.login-logo-img {
+  height: 36px;
+  width: 36px;
+  object-fit: contain;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  vertical-align: middle;
+  letter-spacing: -0.5px;
+}
+
+/* ===== Titles ===== */
+.login-title {
+  text-align: center;
+  margin-bottom: 4px !important;
+  font-weight: 700 !important;
+  color: #1a1a2e !important;
+}
+
+.login-subtitle {
+  display: block;
+  text-align: center;
+  color: #8c8c8c;
+  margin-bottom: 32px;
+  font-size: 14px;
+}
+
+/* ===== Form ===== */
+.login-form {
+  margin-top: 8px;
+}
+
+.login-form .ant-input-affix-wrapper,
+.login-form .ant-input {
+  border-radius: 8px !important;
+  height: 44px;
+}
+
+.login-form .ant-input-affix-wrapper {
+  padding: 0 14px;
+}
+
+.login-form .ant-input-affix-wrapper .ant-input-prefix {
+  margin-right: 10px;
+  color: #bfbfbf;
+  font-size: 16px;
+}
+
+.login-form .ant-input-affix-wrapper:hover,
+.login-form .ant-input-affix-wrapper-focused {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15) !important;
+}
+
+/* ===== Options Row (Remember + Forgot) ===== */
+.login-form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.login-form-options .ant-checkbox-wrapper {
+  color: #595959;
+  font-size: 13px;
+}
+
+.login-form-options .ant-typography a,
+.login-form-options .ant-typography {
+  font-size: 13px;
+}
+
+/* ===== Submit Button ===== */
+.login-submit-btn {
+  height: 46px !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.login-submit-btn:hover {
+  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%) !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.55) !important;
+  transform: translateY(-1px);
+}
+
+.login-submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4) !important;
+}
+
+/* ===== Footer Links ===== */
+.login-form-footer {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.login-form-footer .ant-typography {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.login-form-footer .ant-typography a {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.login-form-footer .ant-typography a:hover {
+  color: #764ba2;
+}
+
+/* ===== Demo Hint ===== */
+.login-demo-hint {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.login-demo-hint .ant-typography {
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+/* ===== Responsive: Mobile ===== */
+@media (max-width: 768px) {
+  .login-page {
+    padding: 12px;
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+
+  .login-card {
+    padding: 32px 24px 28px;
+    border-radius: 12px;
+  }
+
+  .login-logo-img {
+    height: 28px;
+    width: 28px;
+  }
+
+  .logo-text {
+    font-size: 22px;
+  }
+
+  .login-title {
+    font-size: 20px !important;
+  }
+
+  .login-subtitle {
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+
+  .login-form .ant-input-affix-wrapper,
+  .login-form .ant-input {
+    height: 40px;
+  }
+
+  .login-submit-btn {
+    height: 42px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* ===== Ant Design link overrides ===== */
+.login-card .ant-typography a {
+  color: #667eea;
+}
+
+.login-card .ant-typography a:hover {
+  color: #764ba2;
+}
+
+/* ===== Ant Design checkbox color override ===== */
+.login-card .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #667eea;
+  border-color: #667eea;
+}
