@@ -16,7 +16,7 @@ type Mode = 'login' | 'register' | 'forgot';
 const Login: React.FC = () => {
   const [mode, setMode] = useState<Mode>('login');
   const [loading, setLoading] = useState(false);
-  const { login } = useApp();
+  const { login, register } = useApp();
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
@@ -28,12 +28,12 @@ const Login: React.FC = () => {
   const handleLogin = async (values: { username: string; password: string }) => {
     setLoading(true);
     try {
-      const success = login(values.username, values.password);
+      const success = await login(values.username, values.password);
       if (success) {
-        message.success('Login successful!');
+        message.success('登录成功！');
         navigate('/home');
       } else {
-        message.error('Login failed, please try again.');
+        message.error('用户名或密码错误，请重试。');
       }
     } finally {
       setLoading(false);
@@ -48,9 +48,13 @@ const Login: React.FC = () => {
   }) => {
     setLoading(true);
     try {
-      console.log('Register values:', values);
-      message.success('Registration successful! Please log in.');
-      switchMode('login');
+      const success = await register(values.username, values.email, values.password);
+      if (success) {
+        message.success('注册成功！');
+        navigate('/home');
+      } else {
+        message.error('注册失败，用户名或邮箱已存在。');
+      }
     } finally {
       setLoading(false);
     }
@@ -60,7 +64,7 @@ const Login: React.FC = () => {
     setLoading(true);
     try {
       console.log('Forgot password for:', values.email);
-      message.success('Reset email sent! Please check your inbox.');
+      message.success('重置邮件已发送，请检查您的邮箱。');
       switchMode('login');
     } finally {
       setLoading(false);
@@ -69,23 +73,17 @@ const Login: React.FC = () => {
 
   const renderTitle = () => {
     switch (mode) {
-      case 'login':
-        return 'Welcome Back';
-      case 'register':
-        return 'Create Account';
-      case 'forgot':
-        return 'Reset Password';
+      case 'login': return 'Welcome Back';
+      case 'register': return 'Create Account';
+      case 'forgot': return 'Reset Password';
     }
   };
 
   const renderSubtitle = () => {
     switch (mode) {
-      case 'login':
-        return 'Sign in to continue to Plan Maniac';
-      case 'register':
-        return 'Join Plan Maniac today';
-      case 'forgot':
-        return 'Enter your email to reset password';
+      case 'login': return 'Sign in to continue to Plan Maniac';
+      case 'register': return 'Join Plan Maniac today';
+      case 'forgot': return 'Enter your email to reset password';
     }
   };
 
@@ -117,22 +115,14 @@ const Login: React.FC = () => {
               name="username"
               rules={[{ required: true, message: 'Please enter your username' }]}
             >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Username"
-                size="large"
-              />
+              <Input prefix={<UserOutlined />} placeholder="Username" size="large" />
             </Form.Item>
 
             <Form.Item
               name="password"
               rules={[{ required: true, message: 'Please enter your password' }]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Password"
-                size="large"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="Password" size="large" />
             </Form.Item>
 
             <Form.Item>
@@ -145,14 +135,7 @@ const Login: React.FC = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                className="login-submit-btn"
-                loading={loading}
-                block
-                size="large"
-              >
+              <Button type="primary" htmlType="submit" className="login-submit-btn" loading={loading} block size="large">
                 Sign In
               </Button>
             </Form.Item>
@@ -173,15 +156,8 @@ const Login: React.FC = () => {
             onFinish={handleRegister}
             autoComplete="off"
           >
-            <Form.Item
-              name="username"
-              rules={[{ required: true, message: 'Please enter your username' }]}
-            >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Username"
-                size="large"
-              />
+            <Form.Item name="username" rules={[{ required: true, message: 'Please enter your username' }]}>
+              <Input prefix={<UserOutlined />} placeholder="Username" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -191,11 +167,7 @@ const Login: React.FC = () => {
                 { type: 'email', message: 'Please enter a valid email' },
               ]}
             >
-              <Input
-                prefix={<MailOutlined />}
-                placeholder="Email"
-                size="large"
-              />
+              <Input prefix={<MailOutlined />} placeholder="Email" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -205,11 +177,7 @@ const Login: React.FC = () => {
                 { min: 6, message: 'Password must be at least 6 characters' },
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Password"
-                size="large"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="Password" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -227,22 +195,11 @@ const Login: React.FC = () => {
                 }),
               ]}
             >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Confirm Password"
-                size="large"
-              />
+              <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" size="large" />
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                className="login-submit-btn"
-                loading={loading}
-                block
-                size="large"
-              >
+              <Button type="primary" htmlType="submit" className="login-submit-btn" loading={loading} block size="large">
                 Sign Up
               </Button>
             </Form.Item>
@@ -270,22 +227,11 @@ const Login: React.FC = () => {
                 { type: 'email', message: 'Please enter a valid email' },
               ]}
             >
-              <Input
-                prefix={<MailOutlined />}
-                placeholder="Email"
-                size="large"
-              />
+              <Input prefix={<MailOutlined />} placeholder="Email" size="large" />
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                className="login-submit-btn"
-                loading={loading}
-                block
-                size="large"
-              >
+              <Button type="primary" htmlType="submit" className="login-submit-btn" loading={loading} block size="large">
                 Send Reset Email
               </Button>
             </Form.Item>
@@ -295,13 +241,6 @@ const Login: React.FC = () => {
             </div>
           </Form>
         )}
-
-        {/* Demo Hint */}
-        <div className="login-demo-hint">
-          <Text type="secondary">
-            Demo: Enter any username and password to log in
-          </Text>
-        </div>
       </div>
     </div>
   );
