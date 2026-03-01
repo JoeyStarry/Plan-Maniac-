@@ -8,7 +8,7 @@ ARG VITE_API_URL=http://localhost:3000
 ENV VITE_API_URL=$VITE_API_URL
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npm run build
 
