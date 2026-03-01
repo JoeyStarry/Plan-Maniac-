@@ -261,6 +261,7 @@ const Today: React.FC = () => {
     completeTodayPlans,
     addPoints,
     todayCompleted,
+    fetchPlansForDate,
   } = useApp();
 
   const location = useLocation();
@@ -268,6 +269,11 @@ const Today: React.FC = () => {
   const dateParam = queryParams.get('date');
 
   const todayStr = dateParam || dayjs().format('YYYY-MM-DD');
+
+  // Load plans from API on mount
+  useEffect(() => {
+    fetchPlansForDate(todayStr);
+  }, [todayStr]);
   const todayDisplay = dayjs(todayStr).format('YYYY年M月D日 dddd');
   const isRealToday = dayjs().format('YYYY-MM-DD') === todayStr;
 
@@ -297,8 +303,7 @@ const Today: React.FC = () => {
       endTime = timeRange[1].format('HH:mm');
     }
 
-    const newPlan: PlanItem = {
-      id: `plan-${Date.now()}`,
+    addPlan({
       content: trimmed,
       order: todayPlans.length + 1,
       color: 'white',
@@ -307,10 +312,7 @@ const Today: React.FC = () => {
       date: todayStr,
       startTime,
       endTime,
-      createdAt: new Date().toISOString(),
-    };
-
-    addPlan(newPlan);
+    });
     setInputValue('');
     setTimeRange(null);
   };

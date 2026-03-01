@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Avatar,
   Button,
@@ -21,16 +21,10 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../stores/AppContext';
+import { usersApi } from '../../services/users';
+import { pointsApi } from '../../services/points';
+import type { PointTransaction } from '../../services/points';
 import './Profile.css';
-
-/** 模拟积分历史记录 */
-const mockPointsHistory = [
-  { id: 1, desc: '完成每日计划', points: '+1', time: '2026-02-25 18:30' },
-  { id: 2, desc: '完成每日计划', points: '+1', time: '2026-02-24 20:15' },
-  { id: 3, desc: '完成每日计划', points: '+1', time: '2026-02-23 19:42' },
-  { id: 4, desc: '连续打卡 7 天奖励', points: '+5', time: '2026-02-22 21:00' },
-  { id: 5, desc: '完成每日计划', points: '+1', time: '2026-02-21 17:55' },
-];
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useApp();
@@ -39,17 +33,27 @@ const Profile: React.FC = () => {
   const [basicForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [shopModalOpen, setShopModalOpen] = useState(false);
+  const [pointsHistory, setPointsHistory] = useState<PointTransaction[]>([]);
+
+  // Load real points history from API
+  useEffect(() => {
+    pointsApi.getHistory().then(setPointsHistory).catch(() => {});
+  }, []);
 
   /* -------- 头像更换 -------- */
   const handleAvatarChange = (file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const avatar = e.target?.result as string;
-      updateUser({ avatar });
-      message.success('头像更新成功');
+      try {
+        await usersApi.updateProfile({ avatar });
+        updateUser({ avatar });
+        message.success('头像更新成功');
+      } catch {
+        message.error('头像更新失败');
+      }
     };
     reader.readAsDataURL(file);
-    // 阻止默认上传行为
     return false;
   };
 
@@ -66,12 +70,20 @@ const Profile: React.FC = () => {
 
   /* -------- 保存基本信息 -------- */
   const handleSaveBasic = () => {
-    basicForm.validateFields().then((values) => {
-      updateUser({
-        nickname: values.nickname,
-        signature: values.signature,
-      });
-      message.success('个人信息已保存');
+    basicForm.validateFields().then(async (values) => {
+      try {
+        await usersApi.updateProfile({
+          nickname: values.nickname,
+          signature: values.signature,
+        });
+        updateUser({
+          nickname: values.nickname,
+          signature: values.signature,
+        });
+        message.success('个人信息已保存');
+      } catch {
+        message.error('保存失败，请重试');
+      }
     });
   };
 
@@ -238,17 +250,20 @@ const Profile: React.FC = () => {
           <h4 className="points-history-title">积分记录</h4>
           <List
             size="small"
-            dataSource={mockPointsHistory}
+            dataSource={pointsHistory}
+            locale={{ emptyText: '暂无积分记录' }}
             renderItem={(item) => (
               <List.Item
                 key={item.id}
                 extra={
-                  <span className="points-history-value">{item.points}</span>
+                  <span className="points-history-value" style={{ color: item.amount > 0 ? '#52c41a' : '#ff4d4f' }}>
+                    {item.amount > 0 ? `+${item.amount}` : item.amount}
+                  </span>
                 }
               >
                 <List.Item.Meta
-                  title={item.desc}
-                  description={item.time}
+                  title={item.reason}
+                  description={new Date(item.createdAt).toLocaleString('zh-CN')}
                 />
               </List.Item>
             )}

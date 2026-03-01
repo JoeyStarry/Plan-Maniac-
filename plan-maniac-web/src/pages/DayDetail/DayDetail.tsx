@@ -261,7 +261,7 @@ const MiniCalendar: React.FC<{
 const DayDetail: React.FC = () => {
   const { date } = useParams<{ date: string }>();
   const navigate = useNavigate();
-  const { getPlansForDate, updatePlan } = useApp();
+  const { getPlansForDate, updatePlan, fetchPlansForDate } = useApp();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMinutes, setCurrentMinutes] = useState(() => {
     const now = new Date();
@@ -270,6 +270,13 @@ const DayDetail: React.FC = () => {
 
   const currentDate = useMemo(() => dayjs(date), [date]);
   const isToday = useMemo(() => currentDate.isSame(dayjs(), 'day'), [currentDate]);
+
+  // Load plans from API when date changes
+  useEffect(() => {
+    if (date) {
+      fetchPlansForDate(date);
+    }
+  }, [date]);
 
   const plans = useMemo(
     () => getPlansForDate(currentDate.format('YYYY-MM-DD')),
