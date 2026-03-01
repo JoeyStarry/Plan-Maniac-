@@ -26,6 +26,7 @@ interface AppContextType extends AppState {
   addPoints: (amount: number, reason?: string) => Promise<void>;
   getPlansForDate: (date: string) => PlanItem[];
   fetchPlansForDate: (date: string) => Promise<void>;
+  fetchPlansForMonth: (month: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -149,6 +150,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  const fetchPlansForMonth = useCallback(async (month: string) => {
+    try {
+      setLoading(true);
+      const fetched = await plansApi.getAll(undefined, month);
+      setPlans(prev => {
+        const otherMonths = prev.filter(p => !p.date.startsWith(month));
+        const mapped = fetched.map(p => ({
+          ...p,
+          startTime: p.startTime ?? undefined,
+          endTime: p.endTime ?? undefined,
+          description: p.description ?? undefined,
+        }));
+        return [...otherMonths, ...mapped];
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const addPlan = useCallback(async (planData: Omit<PlanItem, 'id' | 'createdAt' | 'userId' | 'updatedAt'>): Promise<PlanItem | null> => {
     try {
       const created = await plansApi.create({
@@ -262,6 +282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addPoints,
       getPlansForDate,
       fetchPlansForDate,
+      fetchPlansForMonth,
     }}>
       {children}
     </AppContext.Provider>

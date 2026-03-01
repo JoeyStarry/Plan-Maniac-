@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
@@ -43,7 +43,7 @@ function getSubText(cell: DayCellData): { text: string; className: string } {
 }
 
 const Home: React.FC = () => {
-  const { getPlansForDate } = useApp();
+  const { getPlansForDate, fetchPlansForMonth } = useApp();
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
   const [direction, setDirection] = useState(0);
@@ -52,6 +52,12 @@ const Home: React.FC = () => {
   const month = currentMonth.month() + 1;
 
   const grid = useMemo(() => generateMonthGrid(year, month), [year, month]);
+
+  // Load plans for current month whenever month changes
+  useEffect(() => {
+    const monthStr = currentMonth.format('YYYY-MM');
+    fetchPlansForMonth(monthStr);
+  }, [currentMonth]);
 
   const handlePrevMonth = useCallback(() => {
     setDirection(-1);

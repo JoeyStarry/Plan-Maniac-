@@ -38,8 +38,8 @@ export interface UpdatePlanParams {
 }
 
 export const plansApi = {
-  getAll: async (date?: string): Promise<PlanItem[]> => {
-    const res = await apiClient.get('/plans', { params: { date } });
+  getAll: async (date?: string, month?: string): Promise<PlanItem[]> => {
+    const res = await apiClient.get('/plans', { params: { date, month } });
     return res.data;
   },
 

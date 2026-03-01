@@ -16,10 +16,13 @@ export class PlanService {
     });
   }
 
-  findAll(userId: string, date?: string) {
+  findAll(userId: string, date?: string, month?: string) {
     const where: any = { userId };
     if (date) {
       where.date = date;
+    } else if (month) {
+      // month format: YYYY-MM, match all dates starting with this prefix
+      where.date = { startsWith: month };
     }
     return this.prisma.plan.findMany({
       where,

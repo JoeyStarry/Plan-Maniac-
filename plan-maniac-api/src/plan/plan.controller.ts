@@ -15,8 +15,8 @@ export class PlanController {
   }
 
   @Get()
-  findAll(@Request() req, @Query('date') date?: string) {
-    return this.planService.findAll(req.user.id, date);
+  findAll(@Request() req, @Query('date') date?: string, @Query('month') month?: string) {
+    return this.planService.findAll(req.user.id, date, month);
   }
 
   @Get(':id')
