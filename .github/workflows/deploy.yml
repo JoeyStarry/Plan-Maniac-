@@ -5,9 +5,6 @@ on:
     branches:
       - main
 
-env:
-  REGISTRY: ghcr.io
-
 jobs:
   # ──────────────────────────────────────────
   # Job 1: Build & Push Docker Images
@@ -18,21 +15,25 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image_api: ${{ steps.set_names.outputs.image_api }}
+      image_web: ${{ steps.set_names.outputs.image_web }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set lowercase image names
+        id: set_names
         run: |
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_API=ghcr.io/${OWNER}/plan-maniac-api" >> $GITHUB_ENV
-          echo "IMAGE_WEB=ghcr.io/${OWNER}/plan-maniac-web" >> $GITHUB_ENV
+          echo "image_api=ghcr.io/${OWNER}/plan-maniac-api" >> $GITHUB_OUTPUT
+          echo "image_web=ghcr.io/${OWNER}/plan-maniac-web" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,8 +47,8 @@ jobs:
           file: ./plan-maniac-api/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_API }}:latest
-            ${{ env.IMAGE_API }}:${{ github.sha }}
+            ${{ steps.set_names.outputs.image_api }}:latest
+            ${{ steps.set_names.outputs.image_api }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -58,8 +59,8 @@ jobs:
           file: ./plan-maniac-web/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_WEB }}:latest
-            ${{ env.IMAGE_WEB }}:${{ github.sha }}
+            ${{ steps.set_names.outputs.image_web }}:latest
+            ${{ steps.set_names.outputs.image_web }}:${{ github.sha }}
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
           cache-from: type=gha
@@ -74,59 +75,48 @@ jobs:
     needs: build
 
     steps:
-      - name: Set lowercase image names
-        run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_API=ghcr.io/${OWNER}/plan-maniac-api" >> $GITHUB_ENV
-          echo "IMAGE_WEB=ghcr.io/${OWNER}/plan-maniac-web" >> $GITHUB_ENV
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PlanManiac_HOST }}
           username: ${{ secrets.PlanManiac_USER }}
           key: ${{ secrets.PlanManiac_SSH_KEY }}
-          envs: IMAGE_API,IMAGE_WEB
-          command_timeout: 10m
+          command_timeout: 15m
           script: |
             set -e
 
-            # ── Install Docker if not present ──
-            if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
-              curl -fsSL https://get.docker.com | sh
-              sudo usermod -aG docker $USER
-              newgrp docker
-            fi
+            IMAGE_API="${{ needs.build.outputs.image_api }}"
+            IMAGE_WEB="${{ needs.build.outputs.image_web }}"
 
             # ── Clone or pull latest code ──
-            if [ ! -d ~/plan-maniac ]; then
-              echo "Cloning repository..."
-              git clone https://github.com/JoeyStarry/Plan-Maniac-.git ~/plan-maniac
+            if [ ! -d "$HOME/plan-maniac" ]; then
+              git clone https://github.com/JoeyStarry/Plan-Maniac-.git "$HOME/plan-maniac"
             fi
-            cd ~/plan-maniac
-            git pull origin main
 
-            # ── Log in to GitHub Container Registry ──
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            cd "$HOME/plan-maniac"
+            git fetch origin main
+            git reset --hard origin/main
+
+            # ── Log in to ghcr.io ──
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # ── Pull latest images ──
-            docker pull ${IMAGE_API}:latest
-            docker pull ${IMAGE_WEB}:latest
+            sudo docker pull ${IMAGE_API}:latest
+            sudo docker pull ${IMAGE_WEB}:latest
 
             # ── Write .env.prod ──
-            cat > .env.prod << EOF
+            cat > "$HOME/plan-maniac/.env.prod" << ENVEOF
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             VITE_API_URL=${{ secrets.VITE_API_URL }}
             IMAGE_API=${IMAGE_API}:latest
             IMAGE_WEB=${IMAGE_WEB}:latest
-            EOF
+            ENVEOF
 
-            # ── Start / restart services ──
-            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-build
+            # ── Restart services ──
+            sudo docker compose -f "$HOME/plan-maniac/docker-compose.prod.yml" --env-file "$HOME/plan-maniac/.env.prod" up -d --no-build
 
-            # ── Clean up old images ──
-            docker image prune -f
+            # ── Clean up ──
+            sudo docker image prune -f
 
             echo "✅ Deployment complete!"
