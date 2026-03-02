@@ -88,21 +88,21 @@ jobs:
             IMAGE_API="${{ needs.build.outputs.image_api }}"
             IMAGE_WEB="${{ needs.build.outputs.image_web }}"
 
+            # ── Ensure ubuntu user is in docker group ──
+            sudo usermod -aG docker $USER || true
+
             # ── Clone or pull latest code ──
             if [ ! -d "$HOME/plan-maniac" ]; then
               git clone https://github.com/JoeyStarry/Plan-Maniac-.git "$HOME/plan-maniac"
             fi
-
             cd "$HOME/plan-maniac"
             git fetch origin main
             git reset --hard origin/main
 
-            # ── Log in to ghcr.io ──
-            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # ── Pull latest images ──
-            sudo docker pull ${IMAGE_API}:latest
-            sudo docker pull ${IMAGE_WEB}:latest
+            # ── Login & pull images as root (sudo -H preserves root HOME for credentials) ──
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo -H docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            sudo -H docker pull ${IMAGE_API}:latest
+            sudo -H docker pull ${IMAGE_WEB}:latest
 
             # ── Write .env.prod ──
             cat > "$HOME/plan-maniac/.env.prod" << ENVEOF
@@ -114,9 +114,9 @@ jobs:
             ENVEOF
 
             # ── Restart services ──
-            sudo docker compose -f "$HOME/plan-maniac/docker-compose.prod.yml" --env-file "$HOME/plan-maniac/.env.prod" up -d --no-build
+            sudo -H docker compose -f "$HOME/plan-maniac/docker-compose.prod.yml" --env-file "$HOME/plan-maniac/.env.prod" up -d --no-build
 
             # ── Clean up ──
-            sudo docker image prune -f
+            sudo -H docker image prune -f
 
             echo "✅ Deployment complete!"
