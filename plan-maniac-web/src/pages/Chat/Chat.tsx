@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Button, Avatar, Spin, Upload, Modal, DatePicker, Checkbox, message } from 'antd';
+import { Input, Button, Avatar, Spin, Upload, message } from 'antd';
 import {
   ArrowLeftOutlined,
   SendOutlined,
@@ -8,6 +8,7 @@ import {
   AudioOutlined,
   LoadingOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import ReactMarkdown from 'react-markdown';
@@ -19,55 +20,98 @@ import './Chat.css';
 
 const { TextArea } = Input;
 
-interface ParsedPlanItem {
+// ---- Types ----
+interface PlanProposalItem {
   content: string;
+  date: string;
   startTime?: string;
 }
 
-function extractPlanItems(text: string): ParsedPlanItem[] {
-  const lines = text.split('\n');
-  const items: ParsedPlanItem[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    // Time-tagged: 09:00 xxx or - 09:00 xxx
-    const timeMatch = trimmed.match(/^[-*\d.]*\s*(\d{1,2}:\d{2})\s+(.+)/);
-    if (timeMatch) {
-      const content = timeMatch[2].replace(/\*\*/g, '').replace(/[*_`]/g, '').trim();
-      if (content.length > 2) {
-        items.push({ content, startTime: timeMatch[1] });
-        continue;
-      }
-    }
-
-    // Bullet: - xxx or * xxx
-    const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
-    if (bulletMatch) {
-      const content = bulletMatch[1].replace(/\*\*/g, '').replace(/[*_`]/g, '').trim();
-      if (content.length > 2) {
-        items.push({ content });
-        continue;
-      }
-    }
-
-    // Numbered: 1. xxx
-    const numberedMatch = trimmed.match(/^\d+[.)]\s+(.+)/);
-    if (numberedMatch) {
-      const content = numberedMatch[1].replace(/\*\*/g, '').replace(/[*_`]/g, '').trim();
-      if (content.length > 2) {
-        items.push({ content });
-      }
-    }
-  }
-
-  return items;
+interface PlanProposal {
+  items: PlanProposalItem[];
+  question?: string;
 }
 
-let _msgIdCounter = 0;
-const genId = (prefix: string) => `${prefix}-${Date.now()}-${++_msgIdCounter}`;
+// ---- Helpers ----
 
+/** Parse <plan_proposal> JSON out of a completed message. */
+function parsePlanProposal(content: string): { text: string; proposal: PlanProposal | null } {
+  const OPEN = '<plan_proposal>';
+  const CLOSE = '</plan_proposal>';
+  const start = content.indexOf(OPEN);
+  const end = content.indexOf(CLOSE);
+  if (start === -1 || end === -1) return { text: content, proposal: null };
+  try {
+    const jsonStr = content.slice(start + OPEN.length, end).trim();
+    const proposal = JSON.parse(jsonStr) as PlanProposal;
+    const before = content.slice(0, start).trim();
+    const after = content.slice(end + CLOSE.length).trim();
+    const text = [before, after].filter(Boolean).join('\n\n');
+    return { text, proposal };
+  } catch {
+    return { text: content, proposal: null };
+  }
+}
+
+/** During streaming, hide <plan_proposal> block (including partial tag). */
+function streamDisplayText(content: string): string {
+  const OPEN = '<plan_proposal>';
+  const idx = content.indexOf(OPEN);
+  if (idx !== -1) return content.slice(0, idx).trim();
+  // Guard partial tag at end of stream
+  for (let i = OPEN.length - 1; i > 0; i--) {
+    if (content.endsWith(OPEN.slice(0, i))) {
+      return content.slice(0, content.length - i).trim();
+    }
+  }
+  return content;
+}
+
+let _id = 0;
+const genId = (prefix: string) => `${prefix}-${Date.now()}-${++_id}`;
+
+// ---- Plan Proposal Card ----
+const PlanProposalCard: React.FC<{
+  proposal: PlanProposal;
+  confirmed: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ proposal, confirmed, onConfirm, onCancel }) => (
+  <div className="plan-proposal-card">
+    <div className="plan-proposal-header">
+      <CalendarOutlined />
+      <span>Pico 为你整理的计划</span>
+    </div>
+    <ul className="plan-proposal-list">
+      {proposal.items.map((item, i) => (
+        <li key={i} className="plan-proposal-item">
+          {item.startTime && (
+            <span className="plan-proposal-time">{item.startTime}</span>
+          )}
+          <span className="plan-proposal-content">{item.content}</span>
+          <span className="plan-proposal-date">{item.date}</span>
+        </li>
+      ))}
+    </ul>
+    {confirmed ? (
+      <div className="plan-proposal-confirmed">
+        <CheckCircleOutlined />
+        <span>已写入日历</span>
+      </div>
+    ) : (
+      <div className="plan-proposal-actions">
+        <Button type="primary" size="small" onClick={onConfirm}>
+          确认，写入日历
+        </Button>
+        <Button size="small" onClick={onCancel}>
+          稍后再说
+        </Button>
+      </div>
+    )}
+  </div>
+);
+
+// ---- Main Component ----
 const Chat: React.FC = () => {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
@@ -80,23 +124,17 @@ const Chat: React.FC = () => {
   const thinkingEndRef = useRef<HTMLDivElement>(null);
   const cancelStreamRef = useRef<(() => void) | null>(null);
 
-  // Track which pico message IDs have finished streaming
   const [completedPicoIds, setCompletedPicoIds] = useState<Set<string>>(new Set());
+  const [confirmedProposalIds, setConfirmedProposalIds] = useState<Set<string>>(new Set());
 
-  // Save modal state
-  const [saveModal, setSaveModal] = useState<{
-    messageId: string;
-    items: ParsedPlanItem[];
-    selected: string[]; // indices as strings
-    date: string;
-  } | null>(null);
-  const [saving, setSaving] = useState(false);
+  // For plan proposals received via dedicated SSE event (backend parsed)
+  const [messageProposals, setMessageProposals] = useState<Record<string, PlanProposal>>({});
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'pico-init',
       role: 'pico',
-      content: `你好！我是 Pico，你的专属计划助手。\n\n你想制定「${category}」，请告诉我你的具体需求和想法，我会帮你制定最合适的方案！`,
+      content: `汪～你好！我是 Pico，你的专属计划助手 🐾\n\n你想制定「${category}」，告诉我你的具体需求和想法吧，我会帮你制定最合适的方案！`,
       type: 'text',
       timestamp: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     },
@@ -199,6 +237,10 @@ const Chat: React.FC = () => {
         setIsLoading(false);
         cancelStreamRef.current = null;
       },
+      // plan_proposal callback
+      (planData: PlanProposal) => {
+        setMessageProposals((prev) => ({ ...prev, [responseId]: planData }));
+      },
     );
   };
 
@@ -213,11 +255,9 @@ const Chat: React.FC = () => {
         type: 'image',
         timestamp: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       };
-      setMessages((prev) => {
-        const updated = [...prev, userMessage];
-        return updated;
-      });
-      callPicoApi([...messages, userMessage]);
+      const updated = [...messages, userMessage];
+      setMessages(updated);
+      callPicoApi(updated);
     }
   };
 
@@ -246,25 +286,12 @@ const Chat: React.FC = () => {
     }
   };
 
-  const openSaveModal = (msg: ChatMessage) => {
-    const items = extractPlanItems(msg.content);
-    setSaveModal({
-      messageId: msg.id,
-      items,
-      selected: items.map((_, i) => String(i)),
-      date: dayjs().format('YYYY-MM-DD'),
-    });
-  };
-
-  const handleSavePlans = async () => {
-    if (!saveModal) return;
-    setSaving(true);
-    const selectedItems = saveModal.selected.map((i) => saveModal.items[Number(i)]);
+  const handleConfirmPlans = async (items: PlanProposalItem[], msgId: string) => {
     try {
-      for (const item of selectedItems) {
+      for (const item of items) {
         await addPlan({
           content: item.content,
-          date: saveModal.date,
+          date: item.date,
           color: 'white',
           completed: false,
           source: 'pico',
@@ -272,13 +299,33 @@ const Chat: React.FC = () => {
           startTime: item.startTime,
         });
       }
-      message.success(`已保存 ${selectedItems.length} 条计划`);
-      setSaveModal(null);
+      setConfirmedProposalIds((prev) => new Set(prev).add(msgId));
+      message.success(`已将 ${items.length} 条计划写入日历 汪～`);
+      const confirmMsg: ChatMessage = {
+        id: genId('pico'),
+        role: 'pico',
+        content: `汪！${items.length} 条计划已经全部写入日历啦 🐾 记得按时完成哦！`,
+        type: 'text',
+        timestamp: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+      };
+      setMessages((prev) => [...prev, confirmMsg]);
+      setCompletedPicoIds((prev) => new Set(prev).add(confirmMsg.id));
     } catch {
       message.error('保存失败，请重试');
-    } finally {
-      setSaving(false);
     }
+  };
+
+  const handleCancelPlans = (msgId: string) => {
+    setConfirmedProposalIds((prev) => new Set(prev).add(msgId));
+    const cancelMsg: ChatMessage = {
+      id: genId('pico'),
+      role: 'pico',
+      content: `好的，随时告诉我要保存就行～ 汪！`,
+      type: 'text',
+      timestamp: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    };
+    setMessages((prev) => [...prev, cancelMsg]);
+    setCompletedPicoIds((prev) => new Set(prev).add(cancelMsg.id));
   };
 
   return (
@@ -301,48 +348,64 @@ const Chat: React.FC = () => {
 
         {/* 消息区域 */}
         <div className="chat-messages">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`message-row ${msg.role === 'pico' ? 'pico' : 'user'}`}
-            >
-              {msg.role === 'pico' && (
-                <Avatar
-                  className="pico-avatar"
-                  size={36}
-                  src={picoAvatar}
-                  style={{ flexShrink: 0 }}
-                />
-              )}
-              <div className="message-content">
-                <div
-                  className={`message-bubble ${msg.role === 'pico' ? 'pico-bubble' : 'user-bubble'}`}
-                >
-                  {msg.type === 'image' && msg.imageUrl ? (
-                    <img src={msg.imageUrl} alt="uploaded" className="chat-uploaded-image" />
-                  ) : (
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+          {messages.map((msg) => {
+            const isCompleted = completedPicoIds.has(msg.id);
+
+            // Get the proposal: either from backend SSE event or parsed from content
+            const proposal: PlanProposal | null =
+              msg.role === 'pico' && isCompleted
+                ? (messageProposals[msg.id] ?? parsePlanProposal(msg.content).proposal)
+                : null;
+
+            // Clean display text (strip plan_proposal block)
+            const displayText =
+              msg.role === 'pico'
+                ? isCompleted
+                  ? parsePlanProposal(msg.content).text
+                  : streamDisplayText(msg.content)
+                : msg.content;
+
+            return (
+              <div
+                key={msg.id}
+                className={`message-row ${msg.role === 'pico' ? 'pico' : 'user'}`}
+              >
+                {msg.role === 'pico' && (
+                  <Avatar
+                    className="pico-avatar"
+                    size={36}
+                    src={picoAvatar}
+                    style={{ flexShrink: 0 }}
+                  />
+                )}
+                <div className="message-content">
+                  <div
+                    className={`message-bubble ${msg.role === 'pico' ? 'pico-bubble' : 'user-bubble'}`}
+                  >
+                    {msg.type === 'image' && msg.imageUrl ? (
+                      <img src={msg.imageUrl} alt="uploaded" className="chat-uploaded-image" />
+                    ) : (
+                      <ReactMarkdown>{displayText}</ReactMarkdown>
+                    )}
+                  </div>
+                  <div
+                    className={`message-time ${msg.role === 'user' ? 'message-time-right' : ''}`}
+                  >
+                    {dayjs(msg.timestamp).format('HH:mm')}
+                  </div>
+                  {/* 计划提案卡片 */}
+                  {proposal && (
+                    <PlanProposalCard
+                      proposal={proposal}
+                      confirmed={confirmedProposalIds.has(msg.id)}
+                      onConfirm={() => handleConfirmPlans(proposal.items, msg.id)}
+                      onCancel={() => handleCancelPlans(msg.id)}
+                    />
                   )}
                 </div>
-                <div
-                  className={`message-time ${msg.role === 'user' ? 'message-time-right' : ''}`}
-                >
-                  {dayjs(msg.timestamp).format('HH:mm')}
-                </div>
-                {/* 保存按钮：只在完成流式输出的 Pico 消息下显示 */}
-                {msg.role === 'pico' && msg.id !== 'pico-init' && completedPicoIds.has(msg.id) && msg.content && (
-                  <Button
-                    size="small"
-                    icon={<CalendarOutlined />}
-                    className="save-plan-btn"
-                    onClick={() => openSaveModal(msg)}
-                  >
-                    保存为计划
-                  </Button>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
 
@@ -413,67 +476,6 @@ const Chat: React.FC = () => {
           <div ref={thinkingEndRef} />
         </div>
       </div>
-
-      {/* 保存计划 Modal */}
-      <Modal
-        title="保存为计划"
-        open={!!saveModal}
-        onCancel={() => setSaveModal(null)}
-        onOk={handleSavePlans}
-        okText="保存"
-        cancelText="取消"
-        confirmLoading={saving}
-        okButtonProps={{ disabled: !saveModal?.selected.length }}
-      >
-        {saveModal && (
-          <div className="save-plan-modal-body">
-            <div className="save-plan-date-row">
-              <span>计划日期：</span>
-              <DatePicker
-                value={dayjs(saveModal.date)}
-                format="YYYY-MM-DD"
-                onChange={(d) =>
-                  setSaveModal((prev) =>
-                    prev ? { ...prev, date: d ? d.format('YYYY-MM-DD') : prev.date } : prev
-                  )
-                }
-                allowClear={false}
-              />
-            </div>
-            {saveModal.items.length > 0 ? (
-              <>
-                <p style={{ color: '#888', fontSize: 13, margin: '12px 0 8px' }}>
-                  选择要保存的计划项：
-                </p>
-                <Checkbox.Group
-                  value={saveModal.selected}
-                  onChange={(vals) =>
-                    setSaveModal((prev) =>
-                      prev ? { ...prev, selected: vals as string[] } : prev
-                    )
-                  }
-                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                >
-                  {saveModal.items.map((item, i) => (
-                    <Checkbox key={i} value={String(i)}>
-                      {item.startTime && (
-                        <span style={{ color: '#667eea', marginRight: 6, fontWeight: 500 }}>
-                          {item.startTime}
-                        </span>
-                      )}
-                      {item.content}
-                    </Checkbox>
-                  ))}
-                </Checkbox.Group>
-              </>
-            ) : (
-              <p style={{ color: '#888', fontSize: 13, marginTop: 12 }}>
-                未检测到结构化计划项，请在今日计划页面手动添加。
-              </p>
-            )}
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

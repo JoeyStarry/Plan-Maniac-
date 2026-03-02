@@ -14,6 +14,7 @@ export const aiApi = {
     onAnswer: (chunk: string) => void,
     onDone: () => void,
     onError: (msg: string) => void,
+    onPlanProposal?: (data: any) => void,
   ): (() => void) => {
     const token = localStorage.getItem('access_token');
 
@@ -59,6 +60,7 @@ export const aiApi = {
               const json = JSON.parse(trimmed.slice(6));
               if (json.type === 'thinking') onThinking(json.content);
               else if (json.type === 'answer') onAnswer(json.content);
+              else if (json.type === 'plan_proposal') onPlanProposal?.(json.data);
               else if (json.type === 'error') onError(json.content);
             } catch {
               // skip malformed

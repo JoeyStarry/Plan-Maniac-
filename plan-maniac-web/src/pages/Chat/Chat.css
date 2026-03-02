@@ -356,27 +356,78 @@
   }
 }
 
-/* 保存计划按钮 */
-.save-plan-btn {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #667eea;
-  border-color: #667eea;
+/* ========== 计划提案卡片 ========== */
+.plan-proposal-card {
+  margin-top: 10px;
+  background: #f0f4ff;
   border-radius: 12px;
-  opacity: 0.85;
-  transition: opacity 0.2s;
-}
-.save-plan-btn:hover {
-  opacity: 1;
+  border: 1px solid #c8d4f5;
+  padding: 14px 16px;
+  font-size: 14px;
+  max-width: 100%;
 }
 
-/* 保存计划 Modal 内容 */
-.save-plan-modal-body {
-  padding: 4px 0;
-}
-.save-plan-date-row {
+.plan-proposal-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
+  gap: 7px;
+  font-weight: 700;
+  color: #4a5bce;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
+
+.plan-proposal-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.plan-proposal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e0e8f5;
+}
+
+.plan-proposal-time {
+  color: #667eea;
+  font-weight: 600;
+  min-width: 42px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.plan-proposal-content {
+  flex: 1;
+  color: #222;
+  font-size: 13px;
+}
+
+.plan-proposal-date {
+  color: #aaa;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.plan-proposal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.plan-proposal-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #52c41a;
+  font-size: 13px;
+  font-weight: 500;
+}
+

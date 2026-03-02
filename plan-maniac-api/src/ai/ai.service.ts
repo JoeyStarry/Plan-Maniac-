@@ -23,16 +23,37 @@ export class AiService {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.flushHeaders();
 
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const weekday = weekdays[now.getDay()];
+
     const systemMessage: ChatMessage = {
       role: 'system',
-      content: `你是 Pico，Plan Maniac 应用中的 AI 计划助手。你的职责是帮助用户制定清晰、可执行的个人计划。
-你擅长：
-- 将用户的想法拆解为具体的行动步骤
+      content: `你是 Pico，Plan Maniac 应用中的 AI 计划助手，是一只聪明可爱的小狗 🐾。你偶尔会在句子末尾自然地加入"汪～"、"汪！"等语气词，表现出活泼可爱的性格，但不要每句都加，要自然随机。
+
+你的职责：
+- 通过对话了解用户的目标和需求
+- 将用户的想法拆解为具体可执行的行动步骤
 - 为每个计划建议合理的时间安排
 - 提供鼓励和积极的反馈
-- 用简洁友好的语气与用户沟通
 
-在每次回答之前，请先用 <think>...</think> 标签写出你的思考过程（分析用户需求、拆解目标、规划思路等），然后再给出正式的回答。
+今天是 ${today}（${weekday}）。
+
+**计划生成规则**：
+经过 2-3 轮对话，充分了解用户的目标、时间和具体需求后，主动向用户提出总结计划。此时在你的回复末尾加入以下格式的计划提案（JSON 必须合法）：
+
+<plan_proposal>
+{"items":[{"content":"任务描述","date":"YYYY-MM-DD","startTime":"HH:mm"}],"question":"要把这些计划写入日历吗？汪～"}
+</plan_proposal>
+
+注意：
+- date 使用 YYYY-MM-DD 格式，基于今天 ${today} 合理安排日期
+- startTime 使用 HH:mm 24小时制，没有明确时间的任务可以省略 startTime
+- 只有充分了解用户需求后才输出计划提案
+- 每次只输出一个 plan_proposal 块
+
+在每次回答之前，请先用 <think>...</think> 标签写出你的思考过程，然后再给出正式的回答。
 回答时请使用中文，保持亲切、专业的风格。`,
     };
 
@@ -60,6 +81,7 @@ export class AiService {
       let accumulated = '';   // full raw content from model
       let emittedThinkLen = 0;
       let emittedAnswerLen = 0;
+      let planProposalEmitted = false;
       const OPEN_TAG = '<think>';
       const CLOSE_TAG = '</think>';
 
@@ -107,12 +129,73 @@ export class AiService {
           emittedThinkLen = thinkContent.length;
         }
 
-        // Everything after </think> is answer
-        const answerRaw = text.slice(closeIdx + CLOSE_TAG.length).replace(/^\s+/, '');
-        if (answerRaw.length > emittedAnswerLen) {
-          const chunk = answerRaw.slice(emittedAnswerLen);
-          res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
-          emittedAnswerLen = answerRaw.length;
+        // Everything after </think> is the answer area — parse plan_proposal within it
+        const PLAN_OPEN = '<plan_proposal>';
+        const PLAN_CLOSE = '</plan_proposal>';
+        const answerArea = text.slice(closeIdx + CLOSE_TAG.length).replace(/^\s+/, '');
+        const planOpenIdx = answerArea.indexOf(PLAN_OPEN);
+        const planCloseIdx = answerArea.indexOf(PLAN_CLOSE);
+
+        if (planOpenIdx === -1) {
+          // No plan_proposal — emit answer (hold back possible partial plan tag)
+          let safeLen = answerArea.length;
+          for (let i = PLAN_OPEN.length - 1; i > 0; i--) {
+            if (answerArea.endsWith(PLAN_OPEN.slice(0, i))) {
+              safeLen = answerArea.length - i;
+              break;
+            }
+          }
+          if (safeLen > emittedAnswerLen) {
+            const chunk = answerArea.slice(emittedAnswerLen, safeLen);
+            if (chunk) {
+              res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
+              emittedAnswerLen = safeLen;
+            }
+          }
+        } else if (planCloseIdx === -1) {
+          // plan_proposal block opening but not yet closed — emit text before it
+          const beforePlan = answerArea.slice(0, planOpenIdx);
+          if (beforePlan.length > emittedAnswerLen) {
+            const chunk = beforePlan.slice(emittedAnswerLen);
+            if (chunk) {
+              res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
+              emittedAnswerLen = beforePlan.length;
+            }
+          }
+        } else {
+          // plan_proposal block complete
+          const beforePlan = answerArea.slice(0, planOpenIdx).trim();
+          if (beforePlan.length > emittedAnswerLen) {
+            const chunk = beforePlan.slice(emittedAnswerLen);
+            if (chunk) {
+              res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
+              emittedAnswerLen = beforePlan.length;
+            }
+          }
+
+          // Emit plan_proposal once (check by emitted flag)
+          if (!planProposalEmitted) {
+            try {
+              const jsonStr = answerArea.slice(planOpenIdx + PLAN_OPEN.length, planCloseIdx).trim();
+              const planData = JSON.parse(jsonStr);
+              res.write(`data: ${JSON.stringify({ type: 'plan_proposal', data: planData })}\n\n`);
+              planProposalEmitted = true;
+            } catch {
+              // malformed JSON — skip
+            }
+          }
+
+          // Emit text after plan_proposal
+          const afterPlan = answerArea.slice(planCloseIdx + PLAN_CLOSE.length).trim();
+          const afterStart = beforePlan.length; // virtual offset for afterPlan tracking
+          if (afterPlan.length > (emittedAnswerLen - afterStart) && emittedAnswerLen >= afterStart) {
+            const emittedAfter = emittedAnswerLen - afterStart;
+            const chunk = afterPlan.slice(emittedAfter);
+            if (chunk) {
+              res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
+              emittedAnswerLen = afterStart + afterPlan.length;
+            }
+          }
         }
       };
 
