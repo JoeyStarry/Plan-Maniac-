@@ -23,7 +23,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Compute lowercase image names (Docker requires lowercase)
       - name: Set lowercase image names
         run: |
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
@@ -40,7 +39,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ---- Build API image ----
       - name: Build and push API image
         uses: docker/build-push-action@v5
         with:
@@ -53,7 +51,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ---- Build Web image (inject API URL at build time) ----
       - name: Build and push Web image
         uses: docker/build-push-action@v5
         with:
@@ -75,7 +72,6 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     needs: build
-    environment: production
 
     steps:
       - name: Set lowercase image names
@@ -91,23 +87,34 @@ jobs:
           username: ${{ secrets.PlanManiac_USER }}
           key: ${{ secrets.PlanManiac_SSH_KEY }}
           envs: IMAGE_API,IMAGE_WEB
+          command_timeout: 10m
           script: |
             set -e
 
-            # Navigate to project directory
-            cd ~/plan-maniac
+            # ── Install Docker if not present ──
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              curl -fsSL https://get.docker.com | sh
+              sudo usermod -aG docker $USER
+              newgrp docker
+            fi
 
-            # Pull latest docker-compose file
+            # ── Clone or pull latest code ──
+            if [ ! -d ~/plan-maniac ]; then
+              echo "Cloning repository..."
+              git clone https://github.com/JoeyStarry/Plan-Maniac-.git ~/plan-maniac
+            fi
+            cd ~/plan-maniac
             git pull origin main
 
-            # Log in to GitHub Container Registry
+            # ── Log in to GitHub Container Registry ──
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pull latest images
+            # ── Pull latest images ──
             docker pull ${IMAGE_API}:latest
             docker pull ${IMAGE_WEB}:latest
 
-            # Write environment variables
+            # ── Write .env.prod ──
             cat > .env.prod << EOF
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
@@ -116,10 +123,10 @@ jobs:
             IMAGE_WEB=${IMAGE_WEB}:latest
             EOF
 
-            # Restart services with zero-downtime
+            # ── Start / restart services ──
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --no-build
 
-            # Clean up old images
+            # ── Clean up old images ──
             docker image prune -f
 
             echo "✅ Deployment complete!"
