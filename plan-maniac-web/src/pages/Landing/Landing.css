@@ -40,7 +40,13 @@
 }
 
 .landing-nav-logo-icon {
-  font-size: 28px;
+  display: none;
+}
+
+.landing-nav-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .landing-nav-logo-text {
@@ -301,6 +307,16 @@
   display: block;
 }
 
+.landing-feature-icon-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  margin-bottom: 24px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .landing-feature-title {
   font-size: 20px;
   font-weight: 700;
@@ -385,7 +401,13 @@
 }
 
 .landing-footer-logo-icon {
-  font-size: 22px;
+  display: none;
+}
+
+.landing-footer-logo-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .landing-footer-logo-text {

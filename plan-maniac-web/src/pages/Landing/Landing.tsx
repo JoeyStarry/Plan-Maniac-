@@ -6,7 +6,7 @@ import './Landing.css';
 /* ========== Data ========== */
 const features = [
   {
-    icon: '🤖',
+    iconImg: '/src/assets/pico-avatar.png',
     title: 'AI 智能规划',
     text: '与 Pico 对话，描述你的目标，AI 会为你自动生成科学合理的分步计划，覆盖学习、健身、工作等 16 大类场景。',
   },
@@ -40,7 +40,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className={`landing-nav ${solid ? 'solid' : 'transparent'}`}>
       <div className="landing-nav-logo">
-        <span className="landing-nav-logo-icon">📋</span>
+        <img src="/src/assets/logo.png" alt="Logo" className="landing-nav-logo-img" />
         <span className="landing-nav-logo-text">Plan Maniac</span>
       </div>
 
@@ -179,7 +179,11 @@ const FeaturesSection: React.FC = () => {
             className="landing-feature-card"
             variants={itemVariants}
           >
-            <span className="landing-feature-icon">{f.icon}</span>
+            {f.iconImg ? (
+              <img src={f.iconImg} alt={f.title} className="landing-feature-icon-img" />
+            ) : (
+              <span className="landing-feature-icon">{f.icon}</span>
+            )}
             <h3 className="landing-feature-title">{f.title}</h3>
             <p className="landing-feature-text">{f.text}</p>
           </motion.div>
@@ -237,7 +241,7 @@ const CTASection: React.FC = () => {
 const LandingFooter: React.FC = () => (
   <footer id="footer" className="landing-footer">
     <div className="landing-footer-logo">
-      <span className="landing-footer-logo-icon">📋</span>
+      <img src="/src/assets/logo.png" alt="Logo" className="landing-footer-logo-img" />
       <span className="landing-footer-logo-text">Plan Maniac</span>
     </div>
     <div className="landing-footer-links">
