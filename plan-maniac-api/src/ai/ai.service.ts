@@ -31,6 +31,8 @@ export class AiService {
 - 为每个计划建议合理的时间安排
 - 提供鼓励和积极的反馈
 - 用简洁友好的语气与用户沟通
+
+在每次回答之前，请先用 <think>...</think> 标签写出你的思考过程（分析用户需求、拆解目标、规划思路等），然后再给出正式的回答。
 回答时请使用中文，保持亲切、专业的风格。`,
     };
 
@@ -55,6 +57,64 @@ export class AiService {
       );
 
       let buffer = '';
+      let accumulated = '';   // full raw content from model
+      let emittedThinkLen = 0;
+      let emittedAnswerLen = 0;
+      const OPEN_TAG = '<think>';
+      const CLOSE_TAG = '</think>';
+
+      const flush = () => {
+        const text = accumulated;
+        const openIdx = text.indexOf(OPEN_TAG);
+        const closeIdx = text.indexOf(CLOSE_TAG);
+
+        if (openIdx === -1) {
+          // No <think> tag yet — emit as answer (hold back possible partial tag)
+          let safeLen = text.length;
+          for (let i = OPEN_TAG.length - 1; i > 0; i--) {
+            if (text.endsWith(OPEN_TAG.slice(0, i))) {
+              safeLen = text.length - i;
+              break;
+            }
+          }
+          if (safeLen > emittedAnswerLen) {
+            const chunk = text.slice(emittedAnswerLen, safeLen);
+            if (chunk) {
+              res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
+              emittedAnswerLen = safeLen;
+            }
+          }
+          return;
+        }
+
+        // <think> tag present
+        if (closeIdx === -1) {
+          // Still inside think block — stream thinking content
+          const thinkSoFar = text.slice(openIdx + OPEN_TAG.length);
+          if (thinkSoFar.length > emittedThinkLen) {
+            const chunk = thinkSoFar.slice(emittedThinkLen);
+            res.write(`data: ${JSON.stringify({ type: 'thinking', content: chunk })}\n\n`);
+            emittedThinkLen = thinkSoFar.length;
+          }
+          return;
+        }
+
+        // Both tags present — think block complete
+        const thinkContent = text.slice(openIdx + OPEN_TAG.length, closeIdx);
+        if (thinkContent.length > emittedThinkLen) {
+          const chunk = thinkContent.slice(emittedThinkLen);
+          res.write(`data: ${JSON.stringify({ type: 'thinking', content: chunk })}\n\n`);
+          emittedThinkLen = thinkContent.length;
+        }
+
+        // Everything after </think> is answer
+        const answerRaw = text.slice(closeIdx + CLOSE_TAG.length).replace(/^\s+/, '');
+        if (answerRaw.length > emittedAnswerLen) {
+          const chunk = answerRaw.slice(emittedAnswerLen);
+          res.write(`data: ${JSON.stringify({ type: 'answer', content: chunk })}\n\n`);
+          emittedAnswerLen = answerRaw.length;
+        }
+      };
 
       response.data.on('data', (chunk: Buffer) => {
         buffer += chunk.toString();
@@ -71,9 +131,9 @@ export class AiService {
             const delta = json.choices?.[0]?.delta;
             if (!delta) continue;
 
-            // Kimi uses standard OpenAI format: content = answer
             if (delta.content) {
-              res.write(`data: ${JSON.stringify({ type: 'answer', content: delta.content })}\n\n`);
+              accumulated += delta.content;
+              flush();
             }
           } catch {
             // skip malformed chunks
