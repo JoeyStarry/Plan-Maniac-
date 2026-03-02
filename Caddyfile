@@ -1,0 +1,7 @@
+planmaniac.com, www.planmaniac.com {
+    reverse_proxy web:80
+}
+
+api.planmaniac.com {
+    reverse_proxy api:3000
+}

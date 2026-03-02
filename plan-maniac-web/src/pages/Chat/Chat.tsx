@@ -1,30 +1,92 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Input, Button, Avatar, Spin, Upload, message } from 'antd';
+import { Input, Button, Avatar, Spin, Upload, Modal, DatePicker, Checkbox, message } from 'antd';
 import {
   ArrowLeftOutlined,
   SendOutlined,
   PictureOutlined,
   AudioOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '../../types';
 import { aiApi } from '../../services/ai';
+import { useApp } from '../../stores/AppContext';
 import './Chat.css';
 
 const { TextArea } = Input;
 
+interface ParsedPlanItem {
+  content: string;
+  startTime?: string;
+}
+
+function extractPlanItems(text: string): ParsedPlanItem[] {
+  const lines = text.split('\n');
+  const items: ParsedPlanItem[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Time-tagged: 09:00 xxx or - 09:00 xxx
+    const timeMatch = trimmed.match(/^[-*\d.]*\s*(\d{1,2}:\d{2})\s+(.+)/);
+    if (timeMatch) {
+      const content = timeMatch[2].replace(/\*\*/g, '').replace(/[*_`]/g, '').trim();
+      if (content.length > 2) {
+        items.push({ content, startTime: timeMatch[1] });
+        continue;
+      }
+    }
+
+    // Bullet: - xxx or * xxx
+    const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
+    if (bulletMatch) {
+      const content = bulletMatch[1].replace(/\*\*/g, '').replace(/[*_`]/g, '').trim();
+      if (content.length > 2) {
+        items.push({ content });
+        continue;
+      }
+    }
+
+    // Numbered: 1. xxx
+    const numberedMatch = trimmed.match(/^\d+[.)]\s+(.+)/);
+    if (numberedMatch) {
+      const content = numberedMatch[1].replace(/\*\*/g, '').replace(/[*_`]/g, '').trim();
+      if (content.length > 2) {
+        items.push({ content });
+      }
+    }
+  }
+
+  return items;
+}
+
 const Chat: React.FC = () => {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
+  const { addPlan } = useApp();
+
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [thinkingText, setThinkingText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const thinkingEndRef = useRef<HTMLDivElement>(null);
   const cancelStreamRef = useRef<(() => void) | null>(null);
+
+  // Track which pico message IDs have finished streaming
+  const [completedPicoIds, setCompletedPicoIds] = useState<Set<string>>(new Set());
+
+  // Save modal state
+  const [saveModal, setSaveModal] = useState<{
+    messageId: string;
+    items: ParsedPlanItem[];
+    selected: string[]; // indices as strings
+    date: string;
+  } | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -75,11 +137,8 @@ const Chat: React.FC = () => {
   };
 
   const handleAudioClick = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+    if (isRecording) stopRecording();
+    else startRecording();
   };
 
   const callPicoApi = (currentMessages: ChatMessage[]) => {
@@ -122,6 +181,7 @@ const Chat: React.FC = () => {
       () => {
         setIsLoading(false);
         cancelStreamRef.current = null;
+        setCompletedPicoIds((prev) => new Set(prev).add(responseId));
       },
       (errMsg) => {
         message.error(errMsg);
@@ -184,6 +244,41 @@ const Chat: React.FC = () => {
     }
   };
 
+  const openSaveModal = (msg: ChatMessage) => {
+    const items = extractPlanItems(msg.content);
+    setSaveModal({
+      messageId: msg.id,
+      items,
+      selected: items.map((_, i) => String(i)),
+      date: dayjs().format('YYYY-MM-DD'),
+    });
+  };
+
+  const handleSavePlans = async () => {
+    if (!saveModal) return;
+    setSaving(true);
+    const selectedItems = saveModal.selected.map((i) => saveModal.items[Number(i)]);
+    try {
+      for (const item of selectedItems) {
+        await addPlan({
+          content: item.content,
+          date: saveModal.date,
+          color: 'white',
+          completed: false,
+          source: 'pico',
+          order: 0,
+          startTime: item.startTime,
+        });
+      }
+      message.success(`已保存 ${selectedItems.length} 条计划`);
+      setSaveModal(null);
+    } catch {
+      message.error('保存失败，请重试');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="chat-layout-container">
       {/* 左侧：聊天区域 */}
@@ -232,6 +327,17 @@ const Chat: React.FC = () => {
                 >
                   {dayjs(msg.timestamp).format('HH:mm')}
                 </div>
+                {/* 保存按钮：只在完成流式输出的 Pico 消息下显示 */}
+                {msg.role === 'pico' && msg.id !== '1' && completedPicoIds.has(msg.id) && msg.content && (
+                  <Button
+                    size="small"
+                    icon={<CalendarOutlined />}
+                    className="save-plan-btn"
+                    onClick={() => openSaveModal(msg)}
+                  >
+                    保存为计划
+                  </Button>
+                )}
               </div>
             </div>
           ))}
@@ -305,6 +411,67 @@ const Chat: React.FC = () => {
           <div ref={thinkingEndRef} />
         </div>
       </div>
+
+      {/* 保存计划 Modal */}
+      <Modal
+        title="保存为计划"
+        open={!!saveModal}
+        onCancel={() => setSaveModal(null)}
+        onOk={handleSavePlans}
+        okText="保存"
+        cancelText="取消"
+        confirmLoading={saving}
+        okButtonProps={{ disabled: !saveModal?.selected.length }}
+      >
+        {saveModal && (
+          <div className="save-plan-modal-body">
+            <div className="save-plan-date-row">
+              <span>计划日期：</span>
+              <DatePicker
+                value={dayjs(saveModal.date)}
+                format="YYYY-MM-DD"
+                onChange={(d) =>
+                  setSaveModal((prev) =>
+                    prev ? { ...prev, date: d ? d.format('YYYY-MM-DD') : prev.date } : prev
+                  )
+                }
+                allowClear={false}
+              />
+            </div>
+            {saveModal.items.length > 0 ? (
+              <>
+                <p style={{ color: '#888', fontSize: 13, margin: '12px 0 8px' }}>
+                  选择要保存的计划项：
+                </p>
+                <Checkbox.Group
+                  value={saveModal.selected}
+                  onChange={(vals) =>
+                    setSaveModal((prev) =>
+                      prev ? { ...prev, selected: vals as string[] } : prev
+                    )
+                  }
+                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                >
+                  {saveModal.items.map((item, i) => (
+                    <Checkbox key={i} value={String(i)}>
+                      {item.startTime && (
+                        <span style={{ color: '#667eea', marginRight: 6, fontWeight: 500 }}>
+                          {item.startTime}
+                        </span>
+                      )}
+                      {item.content}
+                    </Checkbox>
+                  ))}
+                </Checkbox.Group>
+              </>
+            ) : (
+              <p style={{ color: '#888', fontSize: 13, marginTop: 12 }}>
+                未检测到结构化计划项，请在今日计划页面手动添加。
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
