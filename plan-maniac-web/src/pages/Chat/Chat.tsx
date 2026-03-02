@@ -14,6 +14,7 @@ import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '../../types';
 import { aiApi } from '../../services/ai';
 import { useApp } from '../../stores/AppContext';
+import picoAvatar from '../../assets/pico-avatar.png';
 import './Chat.css';
 
 const { TextArea } = Input;
@@ -308,7 +309,7 @@ const Chat: React.FC = () => {
                 <Avatar
                   className="pico-avatar"
                   size={36}
-                  src="/src/assets/pico-avatar.png"
+                  src={picoAvatar}
                   style={{ flexShrink: 0 }}
                 />
               )}

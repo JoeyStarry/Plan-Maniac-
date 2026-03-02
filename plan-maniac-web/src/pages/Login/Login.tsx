@@ -7,6 +7,7 @@ import {
   MailOutlined,
 } from '@ant-design/icons';
 import { useApp } from '../../stores/AppContext';
+import logoImg from '../../assets/logo.png';
 import './Login.css';
 
 const { Title, Text, Link } = Typography;
@@ -92,7 +93,7 @@ const Login: React.FC = () => {
       <div className="login-card">
         {/* Logo */}
         <div className="login-logo">
-          <img src="/src/assets/logo.png" alt="Logo" className="login-logo-img" />
+          <img src={logoImg} alt="Logo" className="login-logo-img" />
           <span className="logo-text">Plan Maniac</span>
         </div>
 

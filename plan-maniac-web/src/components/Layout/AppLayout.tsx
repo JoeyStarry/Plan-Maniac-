@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Avatar, Dropdown, Typography } from 'antd';
+import logoImg from '../../assets/logo.png';
 import {
   HomeOutlined,
   CheckSquareOutlined,
@@ -54,7 +55,7 @@ const AppLayout: React.FC = () => {
       <Header className="app-header">
         <div className="header-left">
           <div className="logo" onClick={() => navigate('/home')}>
-            <img src="/src/assets/logo.png" alt="Logo" className="logo-icon-img" />
+            <img src={logoImg} alt="Logo" className="logo-icon-img" />
             <span className="logo-text">Plan Maniac</span>
           </div>
           <Menu
