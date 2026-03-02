@@ -7,9 +7,10 @@ import { PlanModule } from './plan/plan.module';
 import { CategoryModule } from './category/category.module';
 import { UserModule } from './user/user.module';
 import { PointsModule } from './points/points.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, PlanModule, CategoryModule, UserModule, PointsModule],
+  imports: [PrismaModule, AuthModule, PlanModule, CategoryModule, UserModule, PointsModule, AiModule],
   controllers: [AppController],
   providers: [AppService],
 })

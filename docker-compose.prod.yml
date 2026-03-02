@@ -32,6 +32,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 3000
+      MOONSHOT_API_KEY: ${MOONSHOT_API_KEY}
     ports:
       - '3000:3000'
     depends_on:

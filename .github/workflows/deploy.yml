@@ -109,6 +109,7 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             VITE_API_URL=${{ secrets.VITE_API_URL }}
+            MOONSHOT_API_KEY=${{ secrets.MOONSHOT_API_KEY }}
             IMAGE_API=${IMAGE_API}:latest
             IMAGE_WEB=${IMAGE_WEB}:latest
             ENVEOF
