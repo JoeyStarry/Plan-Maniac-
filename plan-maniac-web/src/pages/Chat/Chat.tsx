@@ -65,6 +65,9 @@ function extractPlanItems(text: string): ParsedPlanItem[] {
   return items;
 }
 
+let _msgIdCounter = 0;
+const genId = (prefix: string) => `${prefix}-${Date.now()}-${++_msgIdCounter}`;
+
 const Chat: React.FC = () => {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
@@ -91,7 +94,7 @@ const Chat: React.FC = () => {
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: '1',
+      id: 'pico-init',
       role: 'pico',
       content: `你好！我是 Pico，你的专属计划助手。\n\n你想制定「${category}」，请告诉我你的具体需求和想法，我会帮你制定最合适的方案！`,
       type: 'text',
@@ -146,7 +149,7 @@ const Chat: React.FC = () => {
     setIsLoading(true);
     setThinkingText('');
 
-    const responseId = Date.now().toString();
+    const responseId = genId('pico');
     setMessages((prev) => [
       ...prev,
       {
@@ -203,7 +206,7 @@ const Chat: React.FC = () => {
     if (info.file.status === 'done' || info.file.originFileObj) {
       const imageUrl = URL.createObjectURL(info.file.originFileObj || info.file);
       const userMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: genId('user'),
         role: 'user',
         content: '[图片上传成功]',
         imageUrl: imageUrl,
@@ -212,9 +215,9 @@ const Chat: React.FC = () => {
       };
       setMessages((prev) => {
         const updated = [...prev, userMessage];
-        callPicoApi(updated);
         return updated;
       });
+      callPicoApi([...messages, userMessage]);
     }
   };
 
@@ -223,19 +226,17 @@ const Chat: React.FC = () => {
     if (!trimmed || isLoading) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: genId('user'),
       role: 'user',
       content: trimmed,
       type: 'text',
       timestamp: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     };
 
-    setMessages((prev) => {
-      const updated = [...prev, userMessage];
-      callPicoApi(updated);
-      return updated;
-    });
+    const updated = [...messages, userMessage];
+    setMessages(updated);
     setInputValue('');
+    callPicoApi(updated);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -329,7 +330,7 @@ const Chat: React.FC = () => {
                   {dayjs(msg.timestamp).format('HH:mm')}
                 </div>
                 {/* 保存按钮：只在完成流式输出的 Pico 消息下显示 */}
-                {msg.role === 'pico' && msg.id !== '1' && completedPicoIds.has(msg.id) && msg.content && (
+                {msg.role === 'pico' && msg.id !== 'pico-init' && completedPicoIds.has(msg.id) && msg.content && (
                   <Button
                     size="small"
                     icon={<CalendarOutlined />}
