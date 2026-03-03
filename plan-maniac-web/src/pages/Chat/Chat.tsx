@@ -25,11 +25,23 @@ interface PlanProposalItem {
   content: string;
   date: string;
   startTime?: string;
+  endTime?: string;
 }
 
 interface PlanProposal {
   items: PlanProposalItem[];
   question?: string;
+}
+
+// ---- Helpers ----
+
+/** If startTime given but no endTime, default to startTime + 1 hour. */
+function resolveEndTime(startTime?: string, endTime?: string): string | undefined {
+  if (endTime) return endTime;
+  if (!startTime) return undefined;
+  const [h, m] = startTime.split(':').map(Number);
+  const total = Math.min(h * 60 + m + 60, 24 * 60 - 1);
+  return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
 }
 
 // ---- Helpers ----
@@ -86,7 +98,9 @@ const PlanProposalCard: React.FC<{
       {proposal.items.map((item, i) => (
         <li key={i} className="plan-proposal-item">
           {item.startTime && (
-            <span className="plan-proposal-time">{item.startTime}</span>
+            <span className="plan-proposal-time">
+              {item.startTime}{item.endTime ? `–${item.endTime}` : ''}
+            </span>
           )}
           <span className="plan-proposal-content">{item.content}</span>
           <span className="plan-proposal-date">{item.date}</span>
@@ -297,6 +311,7 @@ const Chat: React.FC = () => {
           source: 'pico',
           order: 0,
           startTime: item.startTime,
+          endTime: resolveEndTime(item.startTime, item.endTime),
         });
       }
       setConfirmedProposalIds((prev) => new Set(prev).add(msgId));

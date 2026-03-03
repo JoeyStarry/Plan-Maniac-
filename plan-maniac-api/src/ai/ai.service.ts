@@ -44,12 +44,12 @@ export class AiService {
 经过 2-3 轮对话，充分了解用户的目标、时间和具体需求后，主动向用户提出总结计划。此时在你的回复末尾加入以下格式的计划提案（JSON 必须合法）：
 
 <plan_proposal>
-{"items":[{"content":"任务描述","date":"YYYY-MM-DD","startTime":"HH:mm"}],"question":"要把这些计划写入日历吗？汪～"}
+{"items":[{"content":"任务描述","date":"YYYY-MM-DD","startTime":"HH:mm","endTime":"HH:mm"}],"question":"要把这些计划写入日历吗？汪～"}
 </plan_proposal>
 
 注意：
 - date 使用 YYYY-MM-DD 格式，基于今天 ${today} 合理安排日期
-- startTime 使用 HH:mm 24小时制，没有明确时间的任务可以省略 startTime
+- startTime 和 endTime 都使用 HH:mm 24小时制，必须同时提供，没有明确时间的任务请根据内容估算合理时长
 - 只有充分了解用户需求后才输出计划提案
 - 每次只输出一个 plan_proposal 块
 
